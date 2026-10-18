@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактивный тест «Юный инженер-путешественник»</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    margin: 0; padding: 20px; min-height: 100vh; color: #333;
+  }
+  .container {
+    max-width: 800px; margin: 0 auto;
+    background: #fff; border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    overflow: hidden; transition: all 0.3s;
+  }
+  header {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: #fff; padding: 25px 30px; text-align: center;
+  }
+  header h1 { margin: 0; font-size: 26px; }
+  header p { margin: 8px 0 0; opacity: 0.85; font-size: 14px; }
+
+  .panel { padding: 30px; }
+
+  /* === СТАРТОВЫЙ ЭКРАН === */
+  .start-screen { text-align: center; padding: 40px 20px; }
+  .start-screen h2 { color: #2c3e50; margin-bottom: 10px; }
+  .start-screen p { color: #6c757d; margin-bottom: 30px; line-height: 1.6; }
+  .start-screen input {
+    padding: 14px 20px; border: 2px solid #ced4da; border-radius: 10px;
+    font-size: 16px; width: 280px; margin-bottom: 20px; text-align: center;
+    font-family: inherit;
+  }
+  .start-screen input:focus { outline: none; border-color: #667eea; }
+  .btn {
+    padding: 14px 32px; border: none; border-radius: 10px;
+    font-size: 16px; font-weight: bold; cursor: pointer;
+    transition: all 0.2s; font-family: inherit; display: inline-block;
+  }
+  .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-option {
+    display: block; width: 100%; text-align: left;
+    padding: 14px 20px; margin-bottom: 10px;
+    background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 10px;
+    font-size: 15px; cursor: pointer; transition: all 0.2s; font-family: inherit;
+    color: #333;
+  }
+  .btn-option:hover { border-color: #667eea; background: #eef1ff; }
+  .btn-option.selected { border-color: #667eea; background: #e0e7ff; }
+  .btn-option.correct { border-color: #27ae60; background: #d4edda; }
+  .btn-option.wrong { border-color: #e74c3c; background: #f8d7da; }
+  .btn-option:disabled { cursor: not-allowed; opacity: 0.85; }
+
+  /* === ЭКРАН ВОПРОСА === */
+  .question-screen { display: none; }
+  .question-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 15px; font-size: 14px; color: #6c757d;
+  }
+  .progress-bar {
+    height: 8px; background: #e9ecef; border-radius: 4px;
+    overflow: hidden; margin-bottom: 25px;
+  }
+  .progress-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transition: width 0.4s;
+  }
+
+  .scene {
+    position: relative; height: 140px;
+    background: linear-gradient(#87CEEB 0%, #87CEEB 60%, #8FBC8F 60%, #6B8E23 100%);
+    overflow: hidden; border-radius: 12px; margin-bottom: 20px;
+    border: 2px solid #2c3e50;
+  }
+  .scene.space { background: linear-gradient(#0b1d3a 0%, #1e3c72 60%, #2a5298 100%); }
+  .scene.water { background: linear-gradient(#87CEEB 0%, #87CEEB 60%, #4682B4 60%, #2F4F4F 100%); }
+  .scene.sky { background: linear-gradient(#87CEEB 0%, #87CEEB 70%, #98d8c8 70%, #6B8E23 100%); }
+  .road-line {
+    position: absolute; top: 85px; left: 0; right: 0;
+    height: 4px; background: repeating-linear-gradient(90deg, #fff 0 20px, transparent 20px 40px);
+  }
+  .object {
+    position: absolute; top: 55px; font-size: 36px;
+    filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+  }
+  .obj-marker {
+    position: absolute; top: 100px; font-size: 12px; font-weight: bold;
+    color: #fff; background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px;
+  }
+
+  .task-text {
+    background: #f8f9fa; border-left: 5px solid #667eea;
+    padding: 18px 22px; border-radius: 10px; margin-bottom: 22px;
+    font-size: 15px; line-height: 1.6;
+  }
+  .task-text strong { color: #2c3e50; }
+
+  .feedback {
+    padding: 14px 20px; border-radius: 10px; margin-top: 15px;
+    font-size: 14px; display: none; line-height: 1.5;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+  .feedback.err { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+  /* === РЕЗУЛЬТАТ === */
+  .result-screen { display: none; text-align: center; padding: 20px; }
+  .result-screen h2 { color: #2c3e50; margin-bottom: 20px; }
+  .big-score {
+    font-size: 64px; font-weight: bold;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin: 10px 0;
+  }
+  .result-level {
+    display: inline-block; padding: 10px 30px; border-radius: 30px;
+    font-size: 18px; font-weight: bold; margin: 15px 0 25px;
+  }
+  .level-high { background: #d4edda; color: #155724; }
+  .level-mid { background: #fff3cd; color: #856404; }
+  .level-low { background: #f8d7da; color: #721c24; }
+  .result-details {
+    text-align: left; background: #f8f9fa; border-radius: 10px;
+    padding: 20px; margin-bottom: 25px; font-size: 14px; line-height: 1.8;
+  }
+  .result-details h3 { margin-top: 0; color: #2c3e50; }
+  .result-details .item { padding: 6px 0; border-bottom: 1px dashed #dee2e6; }
+  .result-details .item:last-child { border-bottom: none; }
+  .item-ok { color: #27ae60; }
+  .item-err { color: #e74c3c; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🚀 Интерактивный тест «Юный инженер-путешественник»</h1>
+    <p>Деятельностно-креативный критерий · 7 класс · Задачи на движение</p>
+  </header>
+
+  <div class="panel">
+    <!-- СТАРТОВЫЙ ЭКРАН -->
+    <div class="start-screen" id="startScreen">
+      <h2>Привет, будущий инженер!</h2>
+      <p>Сейчас тебе предстоит пройти испытание из 10 заданий.<br>
+      Здесь будут и формулы, и необычные задачи про вертолёты, лодки и даже спутники.<br>
+      Внимательно читай условие и выбирай правильный ответ.</p>
+      <input type="text" id="nameInput" placeholder="Введи своё имя" maxlength="30">
+      <br>
+      <button class="btn btn-primary" id="startBtn" onclick="startTest()">Начать испытание</button>
+    </div>
+
+    <!-- ЭКРАН ВОПРОСА -->
+    <div class="question-screen" id="questionScreen">
+      <div class="question-header">
+        <span id="qCounter">Вопрос 1 из 10</span>
+        <span id="qScore">Правильно: 0</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+      <div class="scene" id="scene">
+        <div class="road-line"></div>
+        <div class="object" id="obj1" style="left: 30px;">🚴</div>
+        <div class="obj-marker" id="mark1" style="left: 20px;">A</div>
+        <div class="object" id="obj2" style="left: 700px;">🚴</div>
+        <div class="obj-marker" id="mark2" style="left: 690px;">B</div>
+      </div>
+
+      <div class="task-text" id="taskText"></div>
+
+      <div id="optionsContainer"></div>
+
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <!-- ЭКРАН РЕЗУЛЬТАТА -->
+    <div class="result-screen" id="resultScreen">
+      <h2 id="resultTitle">Испытание завершено!</h2>
+      <div class="big-score" id="bigScore">0%</div>
+      <div class="result-level" id="resultLevel">—</div>
+      <div class="result-details" id="resultDetails"></div>
+      <button class="btn btn-primary" onclick="restartTest()">Пройти заново</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== ДАННЫЕ ТЕСТА =====
+const questions = [
+  {
+    scene: 'road',
+    objects: [
+      { emoji: '🚴', left: 30, label: 'A · 12 км/ч', labelLeft: 20 },
+      { emoji: '🚴', left: 700, label: 'B · 16 км/ч', labelLeft: 690 }
+    ],
+    text: '<strong>Задание 1.</strong> Два велосипедиста выехали навстречу друг другу. Скорость первого — 12 км/ч, второго — 16 км/ч. Какое действие нужно выполнить, чтобы найти скорость их сближения?',
+    options: [
+      { text: 'Сложить: 12 + 16', correct: true },
+      { text: 'Вычесть: 16 − 12', correct: false },
+      { text: 'Умножить: 12 × 16', correct: false }
+    ],
+    explanation: 'При встречном движении скорости складываются: 12 + 16 = 28 км/ч.'
+  },
+  {
+    scene: 'road',
+    objects: [
+      { emoji: '🚗', left: 30, label: 'легковая · 90 км/ч', labelLeft: 20 },
+      { emoji: '🚌', left: 600, label: 'автобус · 60 км/ч', labelLeft: 590 }
+    ],
+    text: '<strong>Задание 2.</strong> Легковой автомобиль догоняет автобус. Скорость автомобиля — 90 км/ч, автобуса — 60 км/ч. Как найти скорость их сближения?',
+    options: [
+      { text: '90 + 60 = 150 км/ч', correct: false },
+      { text: '90 − 60 = 30 км/ч', correct: true },
+      { text: '60 − 90 = −30 км/ч', correct: false }
+    ],
+    explanation: 'При движении вдогонку скорости вычитаются: 90 − 60 = 30 км/ч.'
+  },
+  {
+    scene: 'water',
+    objects: [
+      { emoji: '🚤', left: 30, label: 'катер · 25 км/ч', labelLeft: 20 },
+      { emoji: '🌊', left: 650, label: 'течение · 5 км/ч', labelLeft: 640 }
+    ],
+    text: '<strong>Задание 3.</strong> Катер плывёт по течению реки. Его собственная скорость — 25 км/ч, скорость течения — 5 км/ч. С какой скоростью катер движется относительно берега?',
+    options: [
+      { text: '25 + 5 = 30 км/ч', correct: true },
+      { text: '25 − 5 = 20 км/ч', correct: false },
+      { text: '25 × 5 = 125 км/ч', correct: false }
+    ],
+    explanation: 'По течению скорости складываются: 25 + 5 = 30 км/ч.'
+  },
+  {
+    scene: 'water',
+    objects: [
+      { emoji: '🚤', left: 30, label: 'катер · 25 км/ч', labelLeft: 20 },
+      { emoji: '🌊', left: 650, label: 'течение · 5 км/ч', labelLeft: 640 }
+    ],
+    text: '<strong>Задание 4.</strong> Тот же катер плывёт против течения. С какой скоростью он движется относительно берега?',
+    options: [
+      { text: '25 + 5 = 30 км/ч', correct: false },
+      { text: '25 − 5 = 20 км/ч', correct: true },
+      { text: '5 − 25 = −20 км/ч', correct: false }
+    ],
+    explanation: 'Против течения скорость течения вычитается: 25 − 5 = 20 км/ч.'
+  },
+  {
+    scene: 'road',
+    objects: [
+      { emoji: '🚂', left: 30, label: 'поезд №1 · 70 км/ч', labelLeft: 20 },
+      { emoji: '🚂', left: 600, label: 'поезд №2 · 50 км/ч', labelLeft: 590 }
+    ],
+    text: '<strong>Задание 5.</strong> Два поезда идут в одном направлении. Первый (сзади) — 70 км/ч, второй (впереди) — 50 км/ч. С какой скоростью первый поезд догоняет второй?',
+    options: [
+      { text: '70 + 50 = 120 км/ч', correct: false },
+      { text: '70 − 50 = 20 км/ч', correct: true },
+      { text: '50 − 70 = −20 км/ч', correct: false }
+    ],
+    explanation: 'При движении в одном направлении скорости вычитаются: 70 − 50 = 20 км/ч.'
+  },
+  {
+    scene: 'space',
+    objects: [
+      { emoji: '🛸', left: 30, label: 'спутник A · 8 км/с', labelLeft: 20 },
+      { emoji: '🛸', left: 650, label: 'спутник B · 6 км/с', labelLeft: 640 }
+    ],
+    text: '<strong>Задание 6.</strong> Два спутника летят в одном направлении. Скорость первого — 8 км/с, второго — 6 км/с. На сколько километров первый обгоняет второй за 10 секунд?',
+    options: [
+      { text: '8 × 10 = 80 км', correct: false },
+      { text: '(8 − 6) × 10 = 20 км', correct: true },
+      { text: '(8 + 6) × 10 = 140 км', correct: false }
+    ],
+    explanation: 'Сначала находим скорость сближения: 8 − 6 = 2 км/с. Затем расстояние: 2 × 10 = 20 км.'
+  },
+  {
+    scene: 'sky',
+    objects: [
+      { emoji: '🚁', left: 30, label: 'вертолёт · 15 м/с', labelLeft: 20 },
+      { emoji: '🏁', left: 650, label: 'финиш · 300 м', labelLeft: 640 }
+    ],
+    text: '<strong>Задание 7.</strong> Вертолёт летит к финишу со скоростью 15 м/с. Расстояние до финиша — 300 м. За какое время вертолёт долетит до финиша?',
+    options: [
+      { text: 't = 300 ÷ 15 = 20 с', correct: true },
+      { text: 't = 15 × 300 = 4500 с', correct: false },
+      { text: 't = 300 − 15 = 285 с', correct: false }
+    ],
+    explanation: 'Время = расстояние ÷ скорость: 300 ÷ 15 = 20 секунд.'
+  },
+  {
+    scene: 'sky',
+    objects: [
+      { emoji: '🚁', left: 30, label: 'вертолёт · 15 м/с', labelLeft: 20 },
+      { emoji: '🏁', left: 650, label: 'финиш · 300 м', labelLeft: 640 }
+    ],
+    text: '<strong>Задание 8.</strong> Тот же вертолёт летит к финишу 20 секунд. Какое расстояние он пролетит, если будет двигаться с той же скоростью?',
+    options: [
+      { text: 'S = 15 ÷ 20 = 0,75 м', correct: false },
+      { text: 'S = 15 × 20 = 300 м', correct: true },
+      { text: 'S = 20 − 15 = 5 м', correct: false }
+    ],
+    explanation: 'Расстояние = скорость × время: 15 × 20 = 300 метров.'
+  },
+  {
+    scene: 'road',
+    objects: [
+      { emoji: '🏃', left: 30, label: 'бегун · 5 м/с', labelLeft: 20 },
+      { emoji: '🚴', left: 650, label: 'велосипедист · 3 м/с', labelLeft: 640 }
+    ],
+    text: '<strong>Задание 9.</strong> Бегун и велосипедист стартуют одновременно из одной точки в одном направлении. Бегун — 5 м/с, велосипедист — 3 м/с. Через какое время бегун обгонит велосипедиста на 40 метров?',
+    options: [
+      { text: 't = 40 ÷ (5 − 3) = 20 с', correct: true },
+      { text: 't = 40 ÷ (5 + 3) = 5 с', correct: false },
+      { text: 't = 40 × (5 − 3) = 80 с', correct: false }
+    ],
+    explanation: 'Скорость сближения: 5 − 3 = 2 м/с. Время: 40 ÷ 2 = 20 секунд.'
+  },
+  {
+    scene: 'water',
+    objects: [
+      { emoji: '🚤', left: 30, label: 'лодка · 12 км/ч', labelLeft: 20 },
+      { emoji: '🌊', left: 650, label: 'течение · 3 км/ч', labelLeft: 640 }
+    ],
+    text: '<strong>Задание 10 (творческое).</strong> Лодка проплыла по течению 45 км за 3 часа. Какова собственная скорость лодки, если скорость течения 3 км/ч?',
+    options: [
+      { text: '45 ÷ 3 + 3 = 18 км/ч', correct: false },
+      { text: '45 ÷ 3 − 3 = 12 км/ч', correct: true },
+      { text: '(45 − 3) ÷ 3 = 14 км/ч', correct: false }
+    ],
+    explanation: 'Скорость по течению: 45 ÷ 3 = 15 км/ч. Собственная скорость: 15 − 3 = 12 км/ч.'
+  }
+];
+
+// ===== СОСТОЯНИЕ =====
+const state = {
+  name: '',
+  currentQ: 0,
+  score: 0,
+  answers: [],
+  answered: false
+};
+
+// ===== УПРАВЛЕНИЕ ЭКРАНАМИ =====
+function showScreen(id) {
+  ['startScreen', 'questionScreen', 'resultScreen'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+  });
+}
+
+function startTest() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) {
+    document.getElementById('nameInput').style.borderColor = '#e74c3c';
+    document.getElementById('nameInput').placeholder = 'Пожалуйста, введи имя!';
+    return;
+  }
+  state.name = name;
+  state.currentQ = 0;
+  state.score = 0;
+  state.answers = [];
+  state.answered = false;
+  showScreen('questionScreen');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = questions[state.currentQ];
+  state.answered = false;
+
+  // Сцена
+  const scene = document.getElementById('scene');
+  scene.className = 'scene ' + (q.scene || '');
+
+  // Объекты на сцене
+  const obj1 = document.getElementById('obj1');
+  const obj2 = document.getElementById('obj2');
+  const mark1 = document.getElementById('mark1');
+  const mark2 = document.getElementById('mark2');
+
+  if (q.objects && q.objects.length >= 2) {
+    obj1.textContent = q.objects[0].emoji;
+    obj1.style.left = q.objects[0].left + 'px';
+    mark1.textContent = q.objects[0].label;
+    mark1.style.left = q.objects[0].labelLeft + 'px';
+
+    obj2.textContent = q.objects[1].emoji;
+    obj2.style.left = q.objects[1].left + 'px';
+    mark2.textContent = q.objects[1].label;
+    mark2.style.left = q.objects[1].labelLeft + 'px';
+    obj2.style.display = 'block';
+    mark2.style.display = 'block';
+  } else {
+    obj2.style.display = 'none';
+    mark2.style.display = 'none';
+  }
+
+  // Текст
+  document.getElementById('taskText').innerHTML = q.text;
+
+  // Счётчик
+  document.getElementById('qCounter').textContent = `Вопрос ${state.currentQ + 1} из ${questions.length}`;
+  document.getElementById('qScore').textContent = `Правильно: ${state.score}`;
+  document.getElementById('progressFill').style.width = ((state.currentQ) / questions.length * 100) + '%';
+
+  // Опции
+  const container = document.getElementById('optionsContainer');
+  container.innerHTML = '';
+  q.options.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-option';
+    btn.textContent = opt.text;
+    btn.onclick = () => selectAnswer(idx);
+    container.appendChild(btn);
+  });
+
+  // Сброс обратной связи
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback';
+  fb.textContent = '';
+}
+
+function selectAnswer(idx) {
+  if (state.answered) return;
+  state.answered = true;
+
+  const q = questions[state.currentQ];
+  const buttons = document.querySelectorAll('#optionsContainer .btn-option');
+  const isCorrect = q.options[idx].correct;
+
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (q.options[i].correct) btn.classList.add('correct');
+    if (i === idx && !isCorrect) btn.classList.add('wrong');
+  });
+
+  if (isCorrect) {
+    state.score++;
+    document.getElementById('qScore').textContent = `Правильно: ${state.score}`;
+  }
+
+  state.answers.push({
+    qNum: state.currentQ + 1,
+    correct: isCorrect,
+    userText: q.options[idx].text,
+    correctText: q.options.find(o => o.correct).text
+  });
+
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback show ' + (isCorrect ? 'ok' : 'err');
+  fb.innerHTML = isCorrect
+    ? `✅ Верно! ${q.explanation}`
+    : `❌ Неверно. Правильный ответ: <strong>${q.options.find(o => o.correct).text}</strong>.<br>${q.explanation}`;
+
+  // Автопереход
+  setTimeout(() => {
+    state.currentQ++;
+    if (state.currentQ < questions.length) {
+      renderQuestion();
+    } else {
+      showResults();
+    }
+  }, isCorrect ? 1800 : 3200);
+}
+
+function showResults() {
+  showScreen('resultScreen');
+  const total = questions.length;
+  const percent = Math.round((state.score / total) * 100);
+
+  document.getElementById('resultTitle').textContent = `${state.name}, испытание завершено!`;
+  document.getElementById('bigScore').textContent = percent + '%';
+
+  const levelEl = document.getElementById('resultLevel');
+  let level, levelClass;
+  if (percent >= 85) { level = '🏆 Высокий уровень'; levelClass = 'level-high'; }
+  else if (percent >= 55) { level = '👍 Средний уровень'; levelClass = 'level-mid'; }
+  else { level = '📚 Низкий уровень'; levelClass = 'level-low'; }
+  levelEl.textContent = level;
+  levelEl.className = 'result-level ' + levelClass;
+
+  // Детали
+  const details = document.getElementById('resultDetails');
+  let html = `<h3>Твой результат: ${state.score} из ${total}</h3>`;
+  state.answers.forEach(a => {
+    const cls = a.correct ? 'item-ok' : 'item-err';
+    const icon = a.correct ? '✅' : '❌';
+    html += `<div class="item ${cls}">${icon} Вопрос ${a.qNum}: ${a.correct ? 'верно' : 'твой ответ — «' + a.userText + '»'}</div>`;
+  });
+
+  let recommendation = '';
+  if (percent >= 85) recommendation = 'Отлично! Ты уверенно владеешь формулами и понимаешь, как работают разные виды движения.';
+  else if (percent >= 55) recommendation = 'Хороший результат! Повтори формулы для движения по воде и вдогонку — и будет ещё лучше.';
+  else recommendation = 'Не расстраивайся! Основные формулы: S = V × t, t = S ÷ V, V = S ÷ t. При встречном движении скорости складываются, при движении в одном направлении — вычитаются.';
+  html += `<h3 style="margin-top:20px;">Рекомендация</h3><p>${recommendation}</p>`;
+
+  details.innerHTML = html;
+}
+
+function restartTest() {
+  document.getElementById('nameInput').value = '';
+  document.getElementById('nameInput').style.borderColor = '#ced4da';
+  document.getElementById('nameInput').placeholder = 'Введи своё имя';
+  showScreen('startScreen');
+}
+
+// Enter для ввода имени
+document.getElementById('nameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startTest();
+});
+
+showScreen('startScreen');
+</script>
+</body>
+</html>
